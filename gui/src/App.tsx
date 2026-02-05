@@ -559,16 +559,16 @@ function App() {
         setUpdateNotes(update.body || 'No release notes available');
       } else if (manual) {
         // Only show message if user manually checked
-        await message('Du har allerede den nyeste versjonen!', {
-          title: 'Ingen oppdatering tilgjengelig',
+        await message('You are already running the latest version!', {
+          title: 'No Updates Available',
           kind: 'info'
         });
       }
     } catch (error) {
       console.error('Failed to check for updates:', error);
       if (manual) {
-        await message('Kunne ikke sjekke for oppdateringer. Prøv igjen senere.', {
-          title: 'Feil',
+        await message('Unable to check for updates. Please check your internet connection and try again later.', {
+          title: 'Update Check Failed',
           kind: 'error'
         });
       }
