@@ -43,10 +43,10 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://github.com/havardnorjordet/xliff-regex-tool/releases/latest/download/latest.json"
+        "https://github.com/hnorjordet/xliff-regex-tool/releases/latest/download/latest.json"
       ],
       "dialog": true,
-      "pubkey": "PLACEHOLDER_WILL_BE_GENERATED"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhENEFDODgzQkFGQ0E4MTYKUldRV3FQeTZnOGhLalpyRlBVOFpkSWdtSWc2TkoyT2xaQjg4dVRvbHNlQkptMEIwWHVKdUxxS0oK"
     }
   }
 }
