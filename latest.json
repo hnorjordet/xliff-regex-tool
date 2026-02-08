@@ -1,0 +1,11 @@
+{
+  "version": "0.4.3",
+  "notes": "See CHANGELOG.md for full list of changes",
+  "pub_date": "2026-02-05T21:30:00Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRV3FQeTZnOGhLalk2MmtkUThQelJmS3Q1bis3cE9zNHIrczNwUGlUNStnT0tGV3JJY1BBUGFyQW9CTzhsRDgveUVmTVQ4UEZJNjB0UElvcnpYQnFIK1d0L3RQek5QNFFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcwMzI3MTgzCWZpbGU6WExJRkYgUmVnRXggVG9vbF8wLjQuM19hYXJjaDY0LmRtZwpOQm1kdUdVU2drWXRHNXFVZjI0QW8rV1ROV1M1L0xQNzJNcDd1MjczSkE3TE5tM2ttNk90bDl0WTBHODh6RnZSN053aDR3a2tBbDUwUTVWczhuR0hEZz09Cg==",
+      "url": "https://github.com/hnorjordet/xliff-regex-tool/releases/download/v0.4.3/XLIFF.RegEx.Tool_0.4.3_aarch64.dmg"
+    }
+  }
+}

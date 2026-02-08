@@ -1,193 +1,160 @@
-# XLIFF Regex Tool
+# XLIFF RegEx Tool
 
-Desktop-verktøy for Find & Replace med regex direkte på XLIFF-filer.
+A powerful desktop application for Find & Replace operations with regex support directly on XLIFF translation files.
 
-## Funksjonalitet
+![Version](https://img.shields.io/badge/version-0.4.3-blue)
+![Platform](https://img.shields.io/badge/platform-macOS-lightgrey)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-- **XLIFF-parsing**: Støtte for XLIFF, MQXLIFF, SDLXLIFF
-- **Regex Find & Replace**: Full regex-støtte med tag-preservering
-- **Automatisk backup**: Sikkerhetskopi før endringer
-- **Xbench-integrasjon**: Les checklist-filer (.xbckl XML)
-- **GUI**: Desktop-grensesnitt (planlagt: Tauri/Electron)
+## Features
 
-## Arkitektur
+- **Multi-format Support**: Works with XLIFF, MQXLIFF (memoQ), and SDLXLIFF (SDL Trados)
+- **Regex Find & Replace**: Full regex support with capture groups and backreferences
+- **Tag Protection**: Automatically preserves XML/HTML tags, including escaped entities (`&lt;`, `&amp;lt;`)
+- **Dual Search**: Search in source and target simultaneously with separate patterns
+- **Batch Checks**: Create reusable QA profiles with multiple regex patterns
+- **ICU Message Format**: Automatic validation and error correction for ICU syntax
+- **Regex Library**: Save and organize frequently used regex patterns
+- **Automatic Backups**: Creates backup before any changes
+- **Auto-Updates**: Built-in update mechanism via GitHub Releases
+- **Dark Mode**: Comfortable dark theme support
 
-```
-RegEx_tool/
-├── src/
-│   ├── parsers/        # XLIFF og Xbench parsers
-│   ├── regex_engine/   # Regex motor med tag-preservering
-│   ├── backup/         # Backup-funksjonalitet
-│   └── cli.py          # CLI for testing
-├── tests/              # Unit tests
-└── samples/            # Sample XLIFF-filer for testing
-```
+## Download
 
-## Installasjon
+Download the latest version from the [Releases](https://github.com/hnorjordet/xliff-regex-tool/releases) page.
+
+### macOS Installation
+
+1. Download `XLIFF.RegEx.Tool_<version>_aarch64.dmg`
+2. Open the DMG file
+3. Drag the app to your Applications folder
+4. On first launch, right-click the app and select "Open" (security requirement)
+
+## Usage
+
+### Basic Find & Replace
+
+1. Open an XLIFF file (File → Open or Cmd+O)
+2. Enter your search pattern (supports regex)
+3. Enter replacement pattern (use `$1`, `$2` for capture groups)
+4. Enable "Ignore Tags" to search only text content
+5. Click "Replace All" or review matches individually
+
+### Batch Checks
+
+Create QA profiles with multiple regex patterns:
+
+1. Click "Batch Checks" → "Manage Profiles"
+2. Create a new profile
+3. Add multiple regex patterns with descriptions
+4. Run the profile against your file
+5. Review and apply fixes selectively
+
+### Regex Library
+
+Save frequently used patterns:
+
+1. Click "Regex Library"
+2. Add patterns with names and descriptions
+3. Organize by categories
+4. Load patterns with one click
+
+## Building from Source
+
+### Prerequisites
+
+- Python 3.14+
+- Node.js 18+
+- Rust (for Tauri)
+
+### Setup
 
 ```bash
-# Opprett virtuelt miljø
+# Clone repository
+git clone https://github.com/hnorjordet/xliff-regex-tool.git
+cd xliff-regex-tool
+
+# Create Python virtual environment
 python3 -m venv venv
-source venv/bin/activate  # På Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# Installer avhengigheter
+# Install Python dependencies
 pip install -r requirements.txt
+
+# Install Node dependencies
+cd gui
+npm install
 ```
 
-## Bruk
-
-### Vis XLIFF-statistikk
+### Development
 
 ```bash
-python src/cli.py stats samples/sample.xliff
+# Run in development mode
+cd gui
+npm run tauri dev
 ```
 
-### Søk etter pattern
+### Build for Production
 
 ```bash
-# Søk i target-segmenter (standard)
-python src/cli.py find samples/sample.xliff "pattern"
-
-# Søk i source-segmenter
-python src/cli.py find samples/sample.xliff "pattern" --source
-
-# Case-sensitive søk
-python src/cli.py find samples/sample.xliff "Pattern" --case-sensitive
-
-# Søk etter e-postadresser
-python src/cli.py find samples/sample.xliff "\w+@\w+\.\w+"
-
-# Søk etter flere mellomrom
-python src/cli.py find samples/sample.xliff "\s{2,}"
-
-# Lagre søket til biblioteket hvis det er nyttig
-python src/cli.py find samples/sample.xliff "\s{2,}" --save
+# Build standalone executable and DMG
+cd gui
+npm run tauri build
 ```
 
-### Replace med regex
+The DMG file will be created in `gui/src-tauri/target/release/bundle/dmg/`
 
-```bash
-# Erstatt pattern i target-segmenter
-python src/cli.py replace samples/sample.xliff "gammelt" "nytt"
+## Architecture
 
-# Normaliser flere mellomrom til ett
-python src/cli.py replace samples/sample.xliff "\s{2,}" " "
+```
+xliff-regex-tool/
+├── src/                    # Python backend
+│   ├── parsers/           # XLIFF/MXLIFF parsers
+│   ├── regex_engine/      # Regex processing with tag preservation
+│   ├── backup/            # Backup management
+│   ├── qa/                # Batch check profiles
+│   ├── validators/        # ICU message format validation
+│   └── cli.py             # CLI interface
+├── gui/                    # Tauri frontend
+│   ├── src/               # React TypeScript UI
+│   └── src-tauri/         # Rust backend
+├── build_cli.sh           # PyInstaller build script
+└── samples/               # Sample XLIFF files
 
-# Lagre til ny fil
-python src/cli.py replace input.xliff "pattern" "replacement" --output output.xliff
-
-# Uten backup (ikke anbefalt)
-python src/cli.py replace input.xliff "pattern" "replacement" --no-backup
-
-# Maksimum antall erstatninger per segment
-python src/cli.py replace input.xliff "pattern" "replacement" --max-replacements 1
-
-# Bruk backreferences
-python src/cli.py replace input.xliff "(\w+)@(\w+)" "\\1 at \\2"
-
-# Lagre replacement til biblioteket hvis nyttig
-python src/cli.py replace input.xliff "pattern" "replacement" --save
 ```
 
-### Håndter backups
+## Technology Stack
 
-```bash
-# List backups
-python src/cli.py backup list samples/sample.xliff
+- **Frontend**: React + TypeScript + Vite
+- **Backend**: Rust (Tauri) + Python
+- **Parser**: lxml (Python)
+- **Regex Engine**: Python `regex` module
+- **Packaging**: PyInstaller + Tauri
 
-# Restore backup
-python src/cli.py backup restore samples/sample.xliff --backup samples/.backups/sample_20231224_120000.xliff
+## Documentation
 
-# Cleanup gamle backups (behold siste 10)
-python src/cli.py backup cleanup samples/sample.xliff --keep 10
-```
+- [User Guide](USER_GUIDE.html) - Complete feature documentation
+- [Changelog](CHANGELOG.md) - Version history and changes
+- [Build Instructions](BUILD.md) - Detailed build guide
+- [GitHub Releases Setup](GITHUB_RELEASES_SETUP.md) - How to publish releases
 
-### Parse Xbench checklist
+## Contributing
 
-```bash
-# Parse og vis statistikk
-python src/cli.py xbench checklist.xbckl
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-# Export regex patterns
-python src/cli.py xbench checklist.xbckl --export
-```
+## License
 
-### Pattern Library
+MIT License - See LICENSE file for details
 
-Verktøyet kommer med et innebygd bibliotek av vanlige regex-mønstre for oversettelse/lokalisering.
+## Author
 
-```bash
-# List alle tilgjengelige patterns
-python src/cli.py patterns list
+Created by Håvard Nørjordet
 
-# List kun aktive patterns
-python src/cli.py patterns list --enabled
+## Support
 
-# Vis kategorier
-python src/cli.py patterns categories
+- Report issues: [GitHub Issues](https://github.com/hnorjordet/xliff-regex-tool/issues)
+- Feature requests: [GitHub Discussions](https://github.com/hnorjordet/xliff-regex-tool/discussions)
 
-# Søk etter patterns
-python src/cli.py patterns search --query "typo"
+---
 
-# Vis detaljer for et pattern
-python src/cli.py patterns show --name "Multiple spaces"
-
-# Bruk et pattern fra biblioteket
-python src/cli.py patterns apply --name "Multiple spaces" --file input.xliff
-
-# Legg til egendefinert pattern
-python src/cli.py patterns add \
-  --name "My Pattern" \
-  --pattern "regex_here" \
-  --replacement "replacement_here" \
-  --description "What it does" \
-  --category "Custom"
-
-# Fjern pattern
-python src/cli.py patterns remove --name "My Pattern"
-```
-
-**Innebygde kategorier:**
-- **Whitespace**: Multiple spaces, leading/trailing spaces, space before punctuation
-- **Punctuation**: Double periods, double commas, etc.
-- **Typos**: Common typos (teh→the, recieve→receive, etc.)
-- **Norwegian**: Norwegian-specific patterns (quotes, dates, etc.)
-- **URLs & Emails**: Find email addresses and URLs
-- **Tags & Markup**: Find unmatched brackets/parentheses
-- **Consistency**: Ensure consistent terminology
-
-## Eksempler
-
-### Normaliser mellomrom
-
-```bash
-python src/cli.py replace input.xliff "\s{2,}" " "
-```
-
-### Rett vanlige skrivefeil
-
-```bash
-python src/cli.py replace input.xliff "teh\b" "the"
-```
-
-### Konverter datoformat (DD.MM.YYYY til MM/DD/YYYY)
-
-```bash
-python src/cli.py replace input.xliff "(\d{2})\.(\d{2})\.(\d{4})" "\\2/\\1/\\3"
-```
-
-### Fjern unødvendige punktum
-
-```bash
-python src/cli.py replace input.xliff "\.\." "."
-```
-
-## Neste steg
-
-- [ ] GUI med Tauri eller Electron
-- [ ] Batch-prosessering av flere filer
-- [ ] Preview av endringer før apply
-- [x] Regex pattern library med built-in patterns
-- [ ] Unit tests
-- [ ] Import patterns fra Xbench til library
-- [ ] Export library til andre formater
+**Note**: This tool is designed for professional translators and localization engineers working with XLIFF files. Basic knowledge of regular expressions is recommended for advanced features.

@@ -1,192 +1,180 @@
-# GitHub Releases og Auto-Oppdatering - Oppsettguide
+# GitHub Releases and Auto-Update Setup Guide
 
-Denne guiden forklarer hvordan du setter opp GitHub Releases og auto-oppdatering for XLIFF RegEx Tool.
+This guide explains how to set up GitHub Releases and auto-updates for XLIFF RegEx Tool.
 
-## Del 1: Forberedelser
+## Part 1: Prerequisites ✅ COMPLETED
 
-### 1.1 Opprett GitHub Repository
+### 1.1 Create GitHub Repository ✅
 
-1. Gå til GitHub.com og opprett et nytt repository
-2. Kall det `xliff-regex-tool` (eller annet navn)
-3. Sett det som public (må være public for at auto-updater skal fungere gratis)
+Repository created at: https://github.com/hnorjordet/xliff-regex-tool
 
-### 1.2 Push koden til GitHub
+### 1.2 Push Code to GitHub ✅
 
-```bash
-cd /Users/havardnorjordet/Python-prosjekter/RegEx_tool
-git init
-git add .
-git commit -m "Initial commit - version 0.4.2"
-git branch -M main
-git remote add origin https://github.com/havardnorjordet/xliff-regex-tool.git
-git push -u origin main
-```
+Code has been pushed to GitHub (commit: dfe97b8)
 
-## Del 2: Generer Signing Keys
+## Part 2: Generate Signing Keys
 
-For sikkerhet bruker Tauri kryptografiske signaturer på oppdateringer. Du må generere et nøkkelpar.
+For security, Tauri uses cryptographic signatures for updates. You need to generate a key pair.
 
-### 2.1 Generer nøkkelpar
+### 2.1 Generate Key Pair
 
 ```bash
 cd gui
-npm run tauri signer generate -- -w ~/.tauri/xliff-regex-tool.key
+npm run tauri signer generate -- --write-keys ~/.tauri/xliff-regex-tool.key
 ```
 
-Dette vil:
-- Opprette en privat nøkkel i `~/.tauri/xliff-regex-tool.key`
-- Vise den offentlige nøkkelen i terminalen (ser ut som: `dW50cnVzdGVkIGNvbW1lbnQ6...`)
+This will:
+- Create a private key in `~/.tauri/xliff-regex-tool.key`
+- Display the public key in the terminal (looks like: `dW50cnVzdGVkIGNvbW1lbnQ6...`)
 
-### 2.2 Oppdater tauri.conf.json
+### 2.2 Update tauri.conf.json
 
-Kopier den offentlige nøkkelen og erstatt `PLACEHOLDER_WILL_BE_GENERATED` i `gui/src-tauri/tauri.conf.json`:
+Copy the public key and replace `PLACEHOLDER_WILL_BE_GENERATED` in `gui/src-tauri/tauri.conf.json`:
 
 ```json
 "plugins": {
   "updater": {
     "active": true,
     "endpoints": [
-      "https://github.com/havardnorjordet/xliff-regex-tool/releases/latest/download/latest.json"
+      "https://github.com/hnorjordet/xliff-regex-tool/releases/latest/download/latest.json"
     ],
     "dialog": true,
-    "pubkey": "DIN_OFFENTLIGE_NØKKEL_HER"
+    "pubkey": "YOUR_PUBLIC_KEY_HERE"
   }
 }
 ```
 
-**VIKTIG**: Den private nøkkelen (`~/.tauri/xliff-regex-tool.key`) må holdes hemmelig! Ikke commit den til Git.
+**IMPORTANT**: The private key (`~/.tauri/xliff-regex-tool.key`) must be kept secret! Never commit it to Git.
 
-## Del 3: Bygg og Publiser Release
+## Part 3: Build and Publish Release
 
-### 3.1 Bygg applikasjonen
+### 3.1 Build the Application
 
 ```bash
 cd gui
 npm run tauri build
 ```
 
-Dette vil skape:
-- DMG: `src-tauri/target/release/bundle/dmg/XLIFF RegEx Tool_0.4.2_aarch64.dmg`
+This will create:
+- DMG: `src-tauri/target/release/bundle/dmg/XLIFF RegEx Tool_0.4.3_aarch64.dmg`
 - App: `src-tauri/target/release/bundle/macos/XLIFF RegEx Tool.app`
 
-### 3.2 Generer signatur for DMG
+### 3.2 Sign the DMG
 
 ```bash
-npm run tauri signer sign \
-  src-tauri/target/release/bundle/dmg/XLIFF\ RegEx\ Tool_0.4.2_aarch64.dmg \
-  -k ~/.tauri/xliff-regex-tool.key
+npx tauri signer sign "src-tauri/target/release/bundle/dmg/XLIFF RegEx Tool_0.4.3_aarch64.dmg" --private-key-path ~/.tauri/xliff-regex-tool.key
 ```
 
-Dette vil outputte en signatur som ser ut som: `dW50cnVzdGVkIGNvbW1lbnQ6...`
+This will output a signature that looks like: `dW50cnVzdGVkIGNvbW1lbnQ6...`
 
-### 3.3 Opprett latest.json
+### 3.3 Create latest.json
 
-Lag en fil `latest.json` med følgende innhold:
+Create a `latest.json` file with the following content:
 
 ```json
 {
-  "version": "0.4.2",
-  "notes": "Se CHANGELOG.md for full liste over endringer",
-  "pub_date": "2026-01-28T12:00:00Z",
+  "version": "0.4.3",
+  "notes": "See CHANGELOG.md for full list of changes",
+  "pub_date": "2026-02-05T21:00:00Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "SIGNATUREN_FRA_STEG_3.2_HER",
-      "url": "https://github.com/havardnorjordet/xliff-regex-tool/releases/download/v0.4.2/XLIFF.RegEx.Tool_0.4.2_aarch64.dmg"
+      "signature": "SIGNATURE_FROM_STEP_3.2_HERE",
+      "url": "https://github.com/hnorjordet/xliff-regex-tool/releases/download/v0.4.3/XLIFF.RegEx.Tool_0.4.3_aarch64.dmg"
     }
   }
 }
 ```
 
-Erstatt:
-- `SIGNATUREN_FRA_STEG_3.2_HER` med signaturen fra forrige steg
-- URL-en med riktig GitHub release URL (justeres etter filnavn)
+Replace:
+- `SIGNATURE_FROM_STEP_3.2_HERE` with the signature from the previous step
+- Adjust the URL if needed (must match the GitHub release URL)
 
-### 3.4 Opprett GitHub Release
+### 3.4 Create GitHub Release
 
-1. Gå til GitHub repository
-2. Klikk på "Releases" → "Create a new release"
-3. Tag version: `v0.4.2`
-4. Release title: `v0.4.2 - Standalone Distribution`
-5. Description: Kopier fra CHANGELOG.md
-6. Last opp filer:
-   - `XLIFF RegEx Tool_0.4.2_aarch64.dmg` (omdøp gjerne til `XLIFF.RegEx.Tool_0.4.2_aarch64.dmg` - uten mellomrom)
+1. Go to GitHub repository
+2. Click on "Releases" → "Create a new release"
+3. Tag version: `v0.4.3`
+4. Release title: `v0.4.3 - Markdown Changelog & Tag Protection Fix`
+5. Description: Copy from CHANGELOG.md
+6. Upload files:
+   - `XLIFF.RegEx.Tool_0.4.3_aarch64.dmg` (rename to remove spaces)
    - `latest.json`
-7. Klikk "Publish release"
+7. Click "Publish release"
 
-## Del 4: Test Auto-Oppdatering
+## Part 4: Test Auto-Update
 
-### 4.1 Installer den nåværende versjonen
+### 4.1 Install Current Version
 
-Send DMG-en til kollega og få ham til å installere den.
+Send the DMG to users and have them install it.
 
-### 4.2 Publiser en ny versjon
+### 4.2 Publish a New Version
 
-Når du har gjort endringer:
+When you've made changes:
 
-1. Oppdater versjonsnummer i:
+1. Update version number in:
    - `gui/package.json`
    - `gui/src-tauri/tauri.conf.json`
    - `gui/src/App.tsx`
    - `USER_GUIDE.html`
    - `CHANGELOG.md`
 
-2. Commit og push endringene
+2. Commit and push changes
 
-3. Bygg ny versjon:
+3. Build new version:
    ```bash
    cd gui
    npm run tauri build
    ```
 
-4. Generer ny signatur for DMG
+4. Generate new signature for DMG
 
-5. Oppdater `latest.json` med ny versjon, ny signatur og ny URL
+5. Update `latest.json` with new version, new signature, and new URL
 
-6. Opprett ny GitHub Release med ny tag (f.eks. `v0.4.3`)
+6. Create new GitHub Release with new tag (e.g., `v0.4.4`)
 
-### 4.3 Kollegaen får oppdatering
+### 4.3 Users Get Updates
 
-Når kollegaen åpner appen:
-- Den sjekker automatisk GitHub for oppdateringer ved oppstart
-- Hvis ny versjon finnes, får han en dialog med spørsmål om han vil oppdatere
-- Hvis han klikker "Yes", lastes ny versjon ned og installeres automatisk
-- Appen restarter med ny versjon
+When users open the app:
+- It automatically checks GitHub for updates on startup
+- If a new version is available, they get a dialog asking if they want to update
+- If they click "Yes", the new version is downloaded and installed automatically
+- The app restarts with the new version
 
-Kollegaen kan også manuelt sjekke for oppdateringer via menyen: **Help → Check for Updates...**
+Users can also manually check for updates via the menu: **Help → Check for Updates...**
 
-## Del 5: Automatisering (valgfritt)
+## Part 5: Automation (Optional)
 
-For å gjøre prosessen enklere kan du:
+To make the process easier, you can:
 
-1. **Bruke GitHub Actions** til å automatisk bygge og publisere releases når du pusher en ny tag
-2. **Lage et script** som oppdaterer versjonsnummer i alle filer automatisk
-3. **Bruke Tauri's GitHub Action** som håndterer bygging, signering og publisering
+1. **Use GitHub Actions** to automatically build and publish releases when you push a new tag
+2. **Create a script** to automatically update version numbers in all files
+3. **Use Tauri's GitHub Action** which handles building, signing, and publishing
 
-Eksempel på GitHub Actions workflow kommer i neste oppdatering!
+Example GitHub Actions workflow coming in future updates!
 
-## Viktige Notater
+## Important Notes
 
-- **Private nøkkelen** må aldri deles eller committes til Git
-- **Versjonsnummer** må være konsistent i alle filer
-- **latest.json** må alltid peke til nyeste versjon
-- **GitHub repository** må være public for gratis auto-update
-- **Signaturen** må genereres på nytt for hver ny DMG
+- **Private key** must never be shared or committed to Git
+- **Version number** must be consistent across all files
+- **latest.json** must always point to the newest version
+- **GitHub repository** must be public for free auto-update
+- **Signature** must be regenerated for each new DMG
 
-## Feilsøking
+## Troubleshooting
 
 ### "Failed to check for updates"
-- Sjekk at GitHub repository er public
-- Verifiser at `latest.json` URL-en i `tauri.conf.json` er korrekt
+- Check that GitHub repository is public
+- Verify that `latest.json` URL in `tauri.conf.json` is correct
 
 ### "Invalid signature"
-- Sørg for at du bruker samme private nøkkel for alle releases
-- Sjekk at signaturen i `latest.json` matcher DMG-filen
+- Ensure you're using the same private key for all releases
+- Check that the signature in `latest.json` matches the DMG file
 
 ### "Update not detected"
-- Sørg for at versjonsnummeret i `latest.json` er høyere enn installert versjon
-- Sjekk at `latest.json` har riktig format
+- Ensure the version number in `latest.json` is higher than the installed version
+- Check that `latest.json` has the correct format
 
-## Ressurser
+## Resources
 
 - [Tauri Updater Documentation](https://v2.tauri.app/plugin/updater/)
 - [Tauri GitHub Actions](https://github.com/tauri-apps/tauri-action)
