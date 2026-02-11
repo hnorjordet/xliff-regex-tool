@@ -21,12 +21,19 @@ interface Metadata {
   origin?: string;
 }
 
+interface TmsMetadata {
+  tms_type?: string;
+  lingotek_url?: string;
+  phrase_url?: string;
+}
+
 interface TransUnit {
   id: string;
   source: string;
   target: string;
   metadata?: Metadata | null;
   icu_errors?: string[] | null;
+  tms_metadata?: TmsMetadata | null;
 }
 
 interface Stats {
@@ -446,6 +453,9 @@ function App() {
   // Dark mode state
   const [darkMode, setDarkMode] = useState<boolean>(false);
 
+  // TMS Integration settings
+  const [tmsAutoCopy, setTmsAutoCopy] = useState<boolean>(true);
+
   // Jump to segment state
   const [jumpToSegment, setJumpToSegment] = useState<string>("");
 
@@ -593,6 +603,34 @@ function App() {
     } finally {
       setIsDownloadingUpdate(false);
     }
+  }
+
+  async function openInTMS(unit: TransUnit) {
+    if (!unit.tms_metadata) return;
+
+    const tmsUrl = unit.tms_metadata.lingotek_url || unit.tms_metadata.phrase_url;
+    if (!tmsUrl) return;
+
+    // Get current value (edited or original)
+    const currentValue = editedUnits.get(unit.id) || unit.target;
+
+    // Auto-copy text if enabled
+    if (tmsAutoCopy && currentValue) {
+      try {
+        await navigator.clipboard.writeText(currentValue);
+        // Show toast notification
+        const toast = document.createElement('div');
+        toast.className = 'tms-toast';
+        toast.textContent = '✓ Text copied to clipboard!';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+      } catch (err) {
+        console.error('Failed to copy text:', err);
+      }
+    }
+
+    // Open TMS URL in browser
+    window.open(tmsUrl, '_blank');
   }
 
   async function openFile() {
@@ -875,6 +913,19 @@ function App() {
     }
     loadLibrary();
   }, []);
+
+  // Load TMS settings from localStorage
+  useEffect(() => {
+    const savedAutoCopy = localStorage.getItem('tmsAutoCopy');
+    if (savedAutoCopy !== null) {
+      setTmsAutoCopy(savedAutoCopy === 'true');
+    }
+  }, []);
+
+  // Save TMS settings to localStorage
+  useEffect(() => {
+    localStorage.setItem('tmsAutoCopy', tmsAutoCopy.toString());
+  }, [tmsAutoCopy]);
 
   // Check for updates on startup
   useEffect(() => {
@@ -2276,6 +2327,26 @@ function App() {
                 </div>
               </div>
 
+              <div className="settings-section">
+                <h3>TMS Integration</h3>
+                <p className="settings-description">
+                  Configure Translation Management System integration for supported XLIFF files.
+                </p>
+                <div className="settings-toggles">
+                  <label className="settings-toggle-label">
+                    <input
+                      type="checkbox"
+                      checked={tmsAutoCopy}
+                      onChange={(e) => setTmsAutoCopy(e.target.checked)}
+                    />
+                    <span>Auto-copy edited text when opening in TMS</span>
+                  </label>
+                </div>
+                <p className="settings-hint">
+                  Supported TMS: Lingotek (more coming soon)
+                </p>
+              </div>
+
               <div className="settings-actions">
                 <button onClick={() => setShowSettingsModal(false)} className="settings-close-btn">
                   Close
@@ -3398,6 +3469,15 @@ function App() {
                 <div className="editor-header">
                   <h3>Editing Segment {displayId}</h3>
                   <div className="editor-actions">
+                    {selectedUnit.tms_metadata && (
+                      <button
+                        onClick={() => openInTMS(selectedUnit)}
+                        className="editor-tms-btn"
+                        title={`Open in ${selectedUnit.tms_metadata.tms_type || 'TMS'}`}
+                      >
+                        🔗 Open in {selectedUnit.tms_metadata.tms_type === 'lingotek' ? 'Lingotek' : 'TMS'}
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         handleCellEdit(selectedSegmentId, currentValue);

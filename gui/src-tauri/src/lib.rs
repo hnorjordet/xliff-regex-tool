@@ -21,12 +21,20 @@ struct Metadata {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+struct TmsMetadata {
+    tms_type: Option<String>,
+    lingotek_url: Option<String>,
+    phrase_url: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 struct TransUnit {
     id: String,
     source: String,
     target: String,
     metadata: Option<Metadata>,
     icu_errors: Option<Vec<String>>,
+    tms_metadata: Option<TmsMetadata>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

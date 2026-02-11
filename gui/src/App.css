@@ -2957,3 +2957,67 @@ a:focus-visible {
 .library-modal .user-guide-modal em {
   font-style: italic;
 }
+
+/* TMS Integration Styles */
+.editor-tms-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: transform 0.2s, box-shadow 0.2s;
+  font-size: 14px;
+  margin-right: 8px;
+}
+
+.editor-tms-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.editor-tms-btn:active {
+  transform: translateY(0);
+}
+
+.tms-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #4CAF50;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  animation: slideInRight 0.3s ease-out;
+  z-index: 10000;
+  font-weight: 500;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.settings-section + .settings-section {
+  margin-top: 30px;
+  padding-top: 30px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.dark-mode .settings-section + .settings-section {
+  border-top-color: #404040;
+}
+
+.settings-hint {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}

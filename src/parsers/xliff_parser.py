@@ -16,6 +16,7 @@ class TransUnit:
     source: etree._Element
     target: Optional[etree._Element]
     element: etree._Element  # Reference to the original trans-unit element
+    tms_metadata: Optional[Dict[str, str]] = None  # TMS integration metadata
 
     def get_source_text(self) -> str:
         """Extract text content from source, preserving inline tags."""
@@ -157,6 +158,21 @@ class XLIFFParser:
         try:
             tu_id = element.get('id', '')
 
+            # Extract TMS metadata from trans-unit attributes
+            tms_metadata = {}
+            for attr_name, attr_value in element.attrib.items():
+                # Lingotek: lgtk:task-segment-url
+                if 'task-segment-url' in attr_name:
+                    tms_metadata['lingotek_url'] = attr_value
+                    tms_metadata['tms_type'] = 'lingotek'
+                # Phrase: Add support if needed in future
+                elif 'phrase' in attr_name.lower() and 'segment-url' in attr_name.lower():
+                    tms_metadata['phrase_url'] = attr_value
+                    tms_metadata['tms_type'] = 'phrase'
+
+            # Only include tms_metadata if we found something
+            tms_data = tms_metadata if tms_metadata else None
+
             # Find source and target elements
             namespaces = {'ns': namespace, 'sdl': self.XLIFF_NAMESPACES['sdl']}
 
@@ -200,7 +216,8 @@ class XLIFFParser:
                             id=mid,
                             source=source_copy,
                             target=target_copy,
-                            element=element  # Keep reference to parent trans-unit
+                            element=element,  # Keep reference to parent trans-unit
+                            tms_metadata=tms_data
                         ))
 
                     return trans_units
@@ -220,7 +237,8 @@ class XLIFFParser:
                 id=tu_id,
                 source=source,
                 target=target,
-                element=element
+                element=element,
+                tms_metadata=tms_data
             )]
 
         except Exception as e:

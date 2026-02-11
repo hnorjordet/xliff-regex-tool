@@ -665,7 +665,8 @@ def stats_command(args):
                 "source": source_text,
                 "target": target_text,
                 "metadata": metadata if metadata else None,
-                "icu_errors": icu_errors
+                "icu_errors": icu_errors,
+                "tms_metadata": tu.tms_metadata
             })
 
         # Filter out empty/structural segments (only tags, no text content)
