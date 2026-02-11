@@ -2352,7 +2352,7 @@ function App() {
                   </label>
                 </div>
                 <p className="settings-hint">
-                  Supported TMS: Lingotek (more coming soon)
+                  Supported TMS: Lingotek, Phrase/Memsource
                 </p>
               </div>
 
@@ -3484,7 +3484,7 @@ function App() {
                         className="editor-tms-btn"
                         title={`Open in ${selectedUnit.tms_metadata.tms_type || 'TMS'}`}
                       >
-                        🔗 Open in {selectedUnit.tms_metadata.tms_type === 'lingotek' ? 'Lingotek' : 'TMS'}
+                        🔗 Open in {selectedUnit.tms_metadata.tms_type === 'lingotek' ? 'Lingotek' : selectedUnit.tms_metadata.tms_type === 'phrase' ? 'Phrase' : 'TMS'}
                       </button>
                     )}
                     <button

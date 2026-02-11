@@ -118,6 +118,7 @@ class XLIFFParser:
         self.tree: Optional[etree._ElementTree] = None
         self.root: Optional[etree._Element] = None
         self.trans_units: List[TransUnit] = []
+        self.phrase_job_uid: Optional[str] = None  # For Phrase TMS integration
 
     def parse(self) -> bool:
         """
@@ -133,6 +134,16 @@ class XLIFFParser:
             # Extract namespace map
             nsmap = self.root.nsmap
             default_ns = nsmap.get(None, self.XLIFF_NAMESPACES['xliff'])
+
+            # Extract Phrase/Memsource job UID from file element for TMS integration
+            file_elements = self.root.xpath(".//ns:file", namespaces={'ns': default_ns})
+            if file_elements:
+                file_elem = file_elements[0]
+                # Check for Memsource/Phrase job-uid attribute
+                for attr_name, attr_value in file_elem.attrib.items():
+                    if 'job-uid' in attr_name:
+                        self.phrase_job_uid = attr_value
+                        break
 
             # Find all trans-unit elements
             # These can be in different locations depending on XLIFF variant
@@ -169,6 +180,18 @@ class XLIFFParser:
                 elif 'phrase' in attr_name.lower() and 'segment-url' in attr_name.lower():
                     tms_metadata['phrase_url'] = attr_value
                     tms_metadata['tms_type'] = 'phrase'
+
+            # Phrase/Memsource: Build URL from job-uid and segment number
+            if not tms_metadata and self.phrase_job_uid and ':' in tu_id:
+                # Extract segment number from MXLIFF ID (format: "taskId:segmentNumber")
+                try:
+                    segment_num = tu_id.split(':')[1]
+                    # Phrase URL format: https://cloud.memsource.com/web/job/{job-uid}/translate#{segment-number}
+                    phrase_url = f"https://cloud.memsource.com/web/job/{self.phrase_job_uid}/translate#{segment_num}"
+                    tms_metadata['phrase_url'] = phrase_url
+                    tms_metadata['tms_type'] = 'phrase'
+                except (IndexError, ValueError):
+                    pass  # Invalid ID format, skip Phrase URL
 
             # Only include tms_metadata if we found something
             tms_data = tms_metadata if tms_metadata else None
