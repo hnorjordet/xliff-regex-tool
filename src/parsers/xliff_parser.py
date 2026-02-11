@@ -181,17 +181,20 @@ class XLIFFParser:
                     tms_metadata['phrase_url'] = attr_value
                     tms_metadata['tms_type'] = 'phrase'
 
-            # Phrase/Memsource: Build URL from job-uid and segment number
-            if not tms_metadata and self.phrase_job_uid and ':' in tu_id:
-                # Extract segment number from MXLIFF ID (format: "taskId:segmentNumber")
-                try:
-                    segment_num = tu_id.split(':')[1]
-                    # Phrase URL format: https://cloud.memsource.com/web/job/{job-uid}/translate#{segment-number}
-                    phrase_url = f"https://cloud.memsource.com/web/job/{self.phrase_job_uid}/translate#{segment_num}"
+            # Phrase/Memsource: Build URL from job-uid and para-id
+            if not tms_metadata and self.phrase_job_uid:
+                # Look for m:para-id attribute - this is the ID Phrase uses for navigation
+                para_id = None
+                for attr_name, attr_value in element.attrib.items():
+                    if 'para-id' in attr_name:
+                        para_id = attr_value
+                        break
+
+                if para_id is not None:
+                    # Phrase URL format: https://cloud.memsource.com/web/job/{job-uid}/translate#{para-id}
+                    phrase_url = f"https://cloud.memsource.com/web/job/{self.phrase_job_uid}/translate#{para_id}"
                     tms_metadata['phrase_url'] = phrase_url
                     tms_metadata['tms_type'] = 'phrase'
-                except (IndexError, ValueError):
-                    pass  # Invalid ID format, skip Phrase URL
 
             # Only include tms_metadata if we found something
             tms_data = tms_metadata if tms_metadata else None
