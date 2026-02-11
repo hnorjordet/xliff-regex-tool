@@ -4,7 +4,7 @@ import { open as openDialog, save, ask, message } from '@tauri-apps/plugin-dialo
 import { listen, emit } from '@tauri-apps/api/event';
 import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
-import { open as openUrl } from '@tauri-apps/plugin-opener';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { marked } from 'marked';
 import "./App.css";
 
