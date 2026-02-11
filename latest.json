@@ -1,11 +1,11 @@
 {
-  "version": "0.4.3",
+  "version": "0.4.4",
   "notes": "See CHANGELOG.md for full list of changes",
-  "pub_date": "2026-02-05T21:30:00Z",
+  "pub_date": "2026-02-11T21:00:00Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRV3FQeTZnOGhLalk2MmtkUThQelJmS3Q1bis3cE9zNHIrczNwUGlUNStnT0tGV3JJY1BBUGFyQW9CTzhsRDgveUVmTVQ4UEZJNjB0UElvcnpYQnFIK1d0L3RQek5QNFFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcwMzI3MTgzCWZpbGU6WExJRkYgUmVnRXggVG9vbF8wLjQuM19hYXJjaDY0LmRtZwpOQm1kdUdVU2drWXRHNXFVZjI0QW8rV1ROV1M1L0xQNzJNcDd1MjczSkE3TE5tM2ttNk90bDl0WTBHODh6RnZSN053aDR3a2tBbDUwUTVWczhuR0hEZz09Cg==",
-      "url": "https://github.com/hnorjordet/xliff-regex-tool/releases/download/v0.4.3/XLIFF.RegEx.Tool_0.4.3_aarch64.dmg"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRV3FQeTZnOGhLamVzbU1Ga2pNZzFpYXkydzdNSHNWMzVLWEo1UzdpelNidGlHWnJYVWdsQlRwVFByZk5LOGJPNHJQVXJCMjJ4TUFVQXdIazZZUkUrNkoxOTJWak5WRlFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcwODM0NzA1CWZpbGU6WExJRkYgUmVnRXggVG9vbF8wLjQuNF9hYXJjaDY0LmRtZwpuQjV3MlU4NkljWlliY0o4WDJVaElMcHhPUlM2R1ZCRkJ5ZWt1Y2RlTzJCZDkzemRsU3dMdnhZQ1VQT2JnSGtFV0FsbXFFQ1V3bEhlaGVPckd6aW5Edz09Cg==",
+      "url": "https://github.com/hnorjordet/xliff-regex-tool/releases/download/v0.4.4/XLIFF.RegEx.Tool_0.4.4_aarch64.dmg"
     }
   }
 }
