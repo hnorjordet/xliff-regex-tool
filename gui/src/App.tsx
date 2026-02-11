@@ -2180,7 +2180,7 @@ function App() {
                 <h1>XLIFF Regex Tool</h1>
               </div>
               <div className="about-info">
-                <p className="version">Version 0.4.3</p>
+                <p className="version">Version 0.4.4</p>
                 <p className="description">
                   A powerful Find & Replace tool for XLIFF translation files with regex support,
                   batch check profiles, and batch processing capabilities.

@@ -5,6 +5,23 @@ All notable changes to XLIFF Regex Tool will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.4] - 2026-02-11
+
+### Added
+- **TMS Integration** - Open segments directly in Translation Management Systems
+  - **Lingotek**: Click "Open in Lingotek" to jump directly to segment in Lingotek workbench
+  - **Phrase/Memsource**: Click "Open in Phrase" to open segment in Phrase web editor
+  - Auto-copy edited text to clipboard when opening TMS (configurable in Settings)
+  - Toast notification confirms text is copied and ready to paste
+  - Settings option to enable/disable auto-copy functionality
+  - Seamless workflow: Edit in app → Click button → Paste in TMS → Save
+
+### Changed
+- **Update check messages** - Improved clarity and language
+  - "No Updates Available" instead of error message when already on latest version
+  - Clear distinction between "no updates" vs actual errors
+  - All messages now in English for consistency
+
 ## [0.4.3] - 2026-02-02
 
 ### Fixed
