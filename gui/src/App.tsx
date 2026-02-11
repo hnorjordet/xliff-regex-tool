@@ -4,6 +4,7 @@ import { open as openDialog, save, ask, message } from '@tauri-apps/plugin-dialo
 import { listen, emit } from '@tauri-apps/api/event';
 import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
+import { open as openUrl } from '@tauri-apps/plugin-opener';
 import { marked } from 'marked';
 import "./App.css";
 
@@ -630,7 +631,15 @@ function App() {
     }
 
     // Open TMS URL in browser
-    window.open(tmsUrl, '_blank');
+    try {
+      await openUrl(tmsUrl);
+    } catch (err) {
+      console.error('Failed to open URL:', err);
+      await message(`Failed to open URL: ${tmsUrl}`, {
+        title: 'Error',
+        kind: 'error'
+      });
+    }
   }
 
   async function openFile() {
