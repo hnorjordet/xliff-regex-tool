@@ -7,6 +7,9 @@ import { relaunch } from '@tauri-apps/plugin-process';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { marked } from 'marked';
 import "./App.css";
+import "./retro-mode.css";
+import "./hacker-mode.css";
+import { getRetroSoundGenerator } from './retroSound';
 
 interface Metadata {
   match_percent?: string;
@@ -454,6 +457,14 @@ function App() {
   // Dark mode state
   const [darkMode, setDarkMode] = useState<boolean>(false);
 
+  // 🎮 Retro mode state (secret easter eggs)
+  const [retroMode, setRetroMode] = useState<boolean>(false);
+  const [hackerMode, setHackerMode] = useState<boolean>(false);
+  const [showRetroModeBadge, setShowRetroModeBadge] = useState<boolean>(false);
+  const [easterEggMessage, setEasterEggMessage] = useState<string>("");
+  const konamiSequence = useRef<string[]>([]);
+  const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+
   // TMS Integration settings
   const [tmsAutoCopy, setTmsAutoCopy] = useState<boolean>(true);
 
@@ -704,6 +715,103 @@ function App() {
   }
 
   function handleSearch() {
+    // 🔫 DOOM Easter Egg - IDKFA (God mode cheat code)
+    if (searchInput.toLowerCase() === 'idkfa') {
+      setRetroMode(true);
+      setEasterEggMessage("VERY HAPPY AMMO ADDED!");
+      setShowRetroModeBadge(true);
+      setSearchInput(""); // Clear the search
+
+      // 🔊 Play modem sound
+      getRetroSoundGenerator().playModemConnect().catch(err =>
+        console.warn('Audio playback failed:', err)
+      );
+
+      setTimeout(() => {
+        setShowRetroModeBadge(false);
+        setEasterEggMessage("");
+      }, 3000);
+      return;
+    }
+
+    // 🔫 DOOM Easter Egg - IDDQD (God mode)
+    if (searchInput.toLowerCase() === 'iddqd') {
+      setRetroMode(true);
+      setEasterEggMessage("DEGREELESSNESS MODE!");
+      setShowRetroModeBadge(true);
+      setSearchInput("");
+
+      // 🔊 Play modem sound
+      getRetroSoundGenerator().playModemConnect().catch(err =>
+        console.warn('Audio playback failed:', err)
+      );
+
+      setTimeout(() => {
+        setShowRetroModeBadge(false);
+        setEasterEggMessage("");
+      }, 3000);
+      return;
+    }
+
+    // 🎮 Classic Adventure Easter Egg - XYZZY
+    if (searchInput.toLowerCase() === 'xyzzy') {
+      setRetroMode(true);
+      setEasterEggMessage("NOTHING HAPPENS.");
+      setShowRetroModeBadge(true);
+      setSearchInput("");
+
+      // 🔊 Play modem sound
+      getRetroSoundGenerator().playModemConnect().catch(err =>
+        console.warn('Audio playback failed:', err)
+      );
+
+      setTimeout(() => {
+        setShowRetroModeBadge(false);
+        setEasterEggMessage("");
+      }, 3000);
+      return;
+    }
+
+    // 🖥️ WarGames Easter Egg - WHOPR (green screen hacker mode)
+    if (searchInput.toLowerCase() === 'whopr') {
+      setHackerMode(true);
+      setRetroMode(false); // Turn off DOS blue mode if it was on
+      setEasterEggMessage("SHALL WE PLAY A GAME?");
+      setShowRetroModeBadge(true);
+      setSearchInput("");
+
+      // 🔊 Play modem sound
+      getRetroSoundGenerator().playModemConnect().catch(err =>
+        console.warn('Audio playback failed:', err)
+      );
+
+      setTimeout(() => {
+        setShowRetroModeBadge(false);
+        setEasterEggMessage("");
+      }, 3000);
+      return;
+    }
+
+    // 🖥️ 1337 Easter Egg - Elite Hacker Mode (green screen)
+    if (searchInput === '1337') {
+      setHackerMode(true);
+      setRetroMode(false); // Turn off DOS blue mode if it was on
+      setEasterEggMessage("ELITE HACKER MODE!");
+      setShowRetroModeBadge(true);
+      setSearchInput("");
+
+      // 🔊 Play modem sound
+      getRetroSoundGenerator().playModemConnect().catch(err =>
+        console.warn('Audio playback failed:', err)
+      );
+
+      setTimeout(() => {
+        setShowRetroModeBadge(false);
+        setEasterEggMessage("");
+      }, 3000);
+      return;
+    }
+
     setSearchPattern(searchInput);
     if (searchIn === 'both') {
       setSourceSearchPattern(sourceSearchInput);
@@ -1063,6 +1171,104 @@ function App() {
       });
     }
   }, [selectedSegmentId, scrollPosition]);
+
+  // 🎮 Retro mode keyboard shortcut (Cmd+R / Ctrl+R)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Cmd+R (Mac) or Ctrl+R (Windows/Linux)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
+        e.preventDefault(); // Prevent browser reload
+        setRetroMode(prev => !prev);
+        setHackerMode(false); // Turn off hacker mode when toggling retro mode
+
+        // Show the "RETRO MODE ACTIVATED" badge
+        if (!retroMode) {
+          setShowRetroModeBadge(true);
+
+          // 🔊 Play modem sound when activating retro mode
+          getRetroSoundGenerator().playModemConnect().catch(err =>
+            console.warn('Audio playback failed:', err)
+          );
+
+          setTimeout(() => {
+            setShowRetroModeBadge(false);
+          }, 2000);
+        }
+      }
+
+      // Check for Cmd+G (Mac) or Ctrl+G (Windows/Linux) - Hacker Mode
+      if ((e.metaKey || e.ctrlKey) && e.key === 'g') {
+        e.preventDefault();
+        setHackerMode(prev => !prev);
+        setRetroMode(false); // Turn off retro mode when toggling hacker mode
+
+        // Show the "HACKER MODE ACTIVATED" badge
+        if (!hackerMode) {
+          setShowRetroModeBadge(true);
+          setEasterEggMessage("HACKER MODE!");
+
+          // 🔊 Play modem sound when activating hacker mode
+          getRetroSoundGenerator().playModemConnect().catch(err =>
+            console.warn('Audio playback failed:', err)
+          );
+
+          setTimeout(() => {
+            setShowRetroModeBadge(false);
+            setEasterEggMessage("");
+          }, 2000);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [retroMode, hackerMode]);
+
+  // 🎮 Konami Code easter egg (↑↑↓↓←→←→BA)
+  useEffect(() => {
+    const handleKonamiCode = (e: KeyboardEvent) => {
+      // Only track if no input is focused
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      konamiSequence.current.push(e.key);
+
+      // Keep only last 10 keys
+      if (konamiSequence.current.length > 10) {
+        konamiSequence.current.shift();
+      }
+
+      // Check if sequence matches Konami Code
+      const sequenceString = konamiSequence.current.join(',');
+      const konamiString = konamiCode.join(',');
+
+      if (sequenceString === konamiString) {
+        // KONAMI CODE ACTIVATED! 🎮
+        setRetroMode(true);
+        setEasterEggMessage("CHEAT CODE ACCEPTED!");
+        setShowRetroModeBadge(true);
+
+        // 🔊 Play modem sound
+        getRetroSoundGenerator().playModemConnect().catch(err =>
+          console.warn('Audio playback failed:', err)
+        );
+
+        // Reset sequence
+        konamiSequence.current = [];
+
+        // Hide badge after 3 seconds
+        setTimeout(() => {
+          setShowRetroModeBadge(false);
+          setEasterEggMessage("");
+        }, 3000);
+      }
+    };
+
+    window.addEventListener('keydown', handleKonamiCode);
+    return () => window.removeEventListener('keydown', handleKonamiCode);
+  }, []);
 
   // Close quick-apply dropdown when clicking outside
   useEffect(() => {
@@ -1961,8 +2167,19 @@ function App() {
   }, [allLibraryEntries, librarySearchTerm]);
 
   return (
-    <div className={`app ${darkMode ? 'dark-mode' : ''}`}>
+    <div className={`app ${darkMode ? 'dark-mode' : ''} ${retroMode ? 'retro-mode' : ''} ${hackerMode ? 'hacker-mode' : ''}`}>
       <a href="#main-content" className="skip-link">Skip to main content</a>
+
+      {/* 🎮 Easter Egg Badge */}
+      {showRetroModeBadge && (
+        <div className={hackerMode ? "hacker-mode-badge" : "retro-mode-badge"} style={{whiteSpace: 'pre'}}>
+          {easterEggMessage ?
+            `╔═════════════════════════╗\n║ ${easterEggMessage.padEnd(23)} ║\n╚═════════════════════════╝`
+          :
+            `╔═══════════════════╗\n║ RETRO MODE        ║\n║ ACTIVATED!        ║\n╚═══════════════════╝`
+          }
+        </div>
+      )}
       <header className="header">
         <div className="header-left">
           <h1>XLIFF Regex Tool</h1>
