@@ -2,7 +2,7 @@
 
 A powerful desktop application for Find & Replace operations with regex support directly on XLIFF translation files.
 
-![Version](https://img.shields.io/badge/version-0.4.4-blue)
+![Version](https://img.shields.io/badge/version-0.4.5-blue)
 ![Platform](https://img.shields.io/badge/platform-macOS-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
