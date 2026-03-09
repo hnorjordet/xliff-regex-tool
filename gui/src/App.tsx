@@ -488,6 +488,13 @@ function App() {
   const [profileLanguage, setProfileLanguage] = useState<string>("");
   const [profileChecks, setProfileChecks] = useState<any[]>([]);
 
+  // TMX support
+  const [tmxTargetLang, setTmxTargetLang] = useState<string | null>(null);
+  const [tmxAvailableLangs, setTmxAvailableLangs] = useState<string[]>([]);
+  const [tmxSrcLang, setTmxSrcLang] = useState<string>("");
+  const [showTmxLangPicker, setShowTmxLangPicker] = useState<boolean>(false);
+  const [pendingTmxPath, setPendingTmxPath] = useState<string>("");
+
   // Focus trap refs for all modals
   const helpModalRef = useFocusTrap(showHelpModal);
   const userGuideModalRef = useFocusTrap(showUserGuideModal);
@@ -677,12 +684,12 @@ function App() {
         }
       }
 
-      // Open file dialog with XLIFF file filters
+      // Open file dialog with XLIFF/TMX file filters
       const selected = await openDialog({
         multiple: false,
         filters: [{
-          name: 'XLIFF Files',
-          extensions: ['xliff', 'xlf', 'mxliff', 'mqxliff', 'sdlxliff']
+          name: 'Translation Files',
+          extensions: ['xliff', 'xlf', 'mxliff', 'mqxliff', 'sdlxliff', 'tmx']
         }]
       });
 
@@ -692,6 +699,33 @@ function App() {
       }
 
       const path = Array.isArray(selected) ? selected[0] : selected;
+
+      // If it's a TMX file, check available languages first
+      if (path.toLowerCase().endsWith('.tmx')) {
+        const langs = await invoke<{ srclang: string; languages: string[] }>("get_tmx_languages", { filePath: path });
+        const targetLangs = langs.languages.filter(l => !l.toLowerCase().startsWith(langs.srclang.toLowerCase().split('-')[0]));
+        if (targetLangs.length > 1) {
+          // Multiple target languages — show picker
+          setTmxSrcLang(langs.srclang);
+          setTmxAvailableLangs(targetLangs);
+          setPendingTmxPath(path);
+          setShowTmxLangPicker(true);
+          return;
+        }
+        // Auto-select the only target language (or none)
+        const chosenLang = targetLangs.length === 1 ? targetLangs[0] : null;
+        setTmxTargetLang(chosenLang);
+        setFilePath(path);
+        setError("");
+        setEditedUnits(new Map());
+        setSelectedSegmentId(null);
+        setEditorValue("");
+        const data = await invoke<XliffData>("open_xliff", { filePath: path, targetLang: chosenLang });
+        setXliffData(data);
+        return;
+      }
+
+      setTmxTargetLang(null);
       setFilePath(path);
       setError("");
       setEditedUnits(new Map()); // Reset edits
@@ -699,7 +733,7 @@ function App() {
       setEditorValue(""); // Clear editor value
 
       // Call Rust backend to parse XLIFF via Python
-      const data = await invoke<XliffData>("open_xliff", { filePath: path });
+      const data = await invoke<XliffData>("open_xliff", { filePath: path, targetLang: null });
       setXliffData(data);
     } catch (err) {
       setError(`Error opening file: ${err}`);
@@ -1530,7 +1564,7 @@ function App() {
       });
 
       // Reload the file to show updated content
-      const data = await invoke<XliffData>("open_xliff", { filePath });
+      const data = await invoke<XliffData>("open_xliff", { filePath, targetLang: tmxTargetLang });
       setXliffData(data);
       setEditedUnits(new Map());
       setQaBatchResults(null); // Clear results
@@ -1796,6 +1830,55 @@ function App() {
     }
   }
 
+  async function importChecksFromXML() {
+    try {
+      // Open file dialog (reuse existing pattern)
+      const selected = await openDialog({
+        filters: [{
+          name: 'XML',
+          extensions: ['xml']
+        }],
+        multiple: false
+      });
+
+      if (!selected || typeof selected !== 'string') return;
+
+      // Import library via existing Tauri command
+      const importedLibrary = await invoke<RegexLibrary>("import_regex_library", {
+        importPath: selected
+      });
+
+      // Convert all entries from all categories into batch check steps
+      const newChecks: any[] = [];
+      let currentOrder = profileChecks.length + 1;
+
+      for (const category of importedLibrary.categories) {
+        for (const entry of category.entries) {
+          newChecks.push({
+            order: currentOrder++,
+            enabled: true,
+            name: entry.name,
+            description: entry.description,
+            pattern: entry.pattern,
+            replacement: entry.replace,
+            category: category.name,  // Use category name from XML
+            case_sensitive: false,
+            exclude_pattern: ""
+          });
+        }
+      }
+
+      // Append to existing checks
+      const updatedChecks = [...profileChecks, ...newChecks];
+      setProfileChecks(updatedChecks);
+
+      alert(`Imported ${newChecks.length} checks from ${selected}`);
+    } catch (err) {
+      console.error("Failed to import checks from XML:", err);
+      setError(`Failed to import checks: ${err}`);
+    }
+  }
+
   async function exportQAProfile() {
     if (!selectedProfile) {
       alert("Please select a profile to export");
@@ -2014,14 +2097,15 @@ function App() {
       // Call Rust backend to save via Python
       await invoke("save_xliff", {
         filePath: filePath,
-        editedUnits: editsArray
+        editedUnits: editsArray,
+        targetLang: tmxTargetLang
       });
 
       // Clear edits after successful save
       setEditedUnits(new Map());
 
       // Reload file to show saved state
-      const data = await invoke<XliffData>("open_xliff", { filePath: filePath });
+      const data = await invoke<XliffData>("open_xliff", { filePath: filePath, targetLang: tmxTargetLang });
       setXliffData(data);
 
       alert("File saved successfully!");
@@ -2227,6 +2311,61 @@ function App() {
         </div>
       </header>
 
+      {/* TMX Language Picker Modal */}
+      {showTmxLangPicker && (
+        <div className="library-modal-overlay" role="presentation">
+          <div className="library-modal" role="dialog" aria-modal="true" aria-label="Select target language">
+            <div className="library-modal-header">
+              <h2>Select Target Language</h2>
+            </div>
+            <div className="library-modal-body" style={{ padding: '1.5rem' }}>
+              <p>This TMX file contains multiple target languages. Select which one to use as the translation target.</p>
+              <p style={{ fontSize: '0.85rem', color: '#666' }}>Source language: <strong>{tmxSrcLang}</strong></p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+                {tmxAvailableLangs.map(lang => (
+                  <label key={lang} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}>
+                    <input
+                      type="radio"
+                      name="tmxLang"
+                      value={lang}
+                      onChange={() => setTmxTargetLang(lang)}
+                      checked={tmxTargetLang === lang}
+                    />
+                    {lang}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="library-modal-footer">
+              <button
+                onClick={async () => {
+                  if (!tmxTargetLang) return;
+                  setShowTmxLangPicker(false);
+                  setFilePath(pendingTmxPath);
+                  setError("");
+                  setEditedUnits(new Map());
+                  setSelectedSegmentId(null);
+                  setEditorValue("");
+                  try {
+                    const data = await invoke<XliffData>("open_xliff", { filePath: pendingTmxPath, targetLang: tmxTargetLang });
+                    setXliffData(data);
+                  } catch (err) {
+                    setError(`Error opening TMX file: ${err}`);
+                  }
+                }}
+                disabled={!tmxTargetLang}
+                className="apply-btn"
+              >
+                Open
+              </button>
+              <button onClick={() => { setShowTmxLangPicker(false); setPendingTmxPath(""); }} className="cancel-btn">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Help Modal */}
       {showHelpModal && (
         <div className="library-modal-overlay" onClick={() => setShowHelpModal(false)} role="presentation">
@@ -2397,7 +2536,7 @@ function App() {
                 <h1>XLIFF Regex Tool</h1>
               </div>
               <div className="about-info">
-                <p className="version">Version 0.4.4</p>
+                <p className="version">Version 0.5.0</p>
                 <p className="description">
                   A powerful Find & Replace tool for XLIFF translation files with regex support,
                   batch check profiles, and batch processing capabilities.
@@ -3154,9 +3293,14 @@ function App() {
               <div className="profile-checks-section">
                 <div className="checks-header">
                   <h3>Checks ({profileChecks.length})</h3>
-                  <button onClick={addCheckToProfile} className="add-check-btn">
-                    + Add Custom Check
-                  </button>
+                  <div className="checks-header-buttons">
+                    <button onClick={addCheckToProfile} className="add-check-btn">
+                      + Add Custom Check
+                    </button>
+                    <button onClick={importChecksFromXML} className="import-checks-btn" title="Import checks from XML file">
+                      Import from XML
+                    </button>
+                  </div>
                 </div>
 
                 {profileChecks.length === 0 ? (
@@ -3309,6 +3453,11 @@ function App() {
       {filePath && (
         <div className="file-info">
           <strong>File:</strong> {filePath}
+          {filePath.toLowerCase().endsWith('.tmx') && (
+            <span className="tmx-badge" title={tmxTargetLang ? `Target language: ${tmxTargetLang}` : "TMX file"}>
+              TMX{tmxTargetLang ? ` · ${tmxTargetLang}` : ''}
+            </span>
+          )}
         </div>
       )}
 
@@ -3921,9 +4070,9 @@ function App() {
 
       {!xliffData && !error && (
         <div className="welcome">
-          <p>Open an XLIFF file to get started</p>
+          <p>Open an XLIFF or TMX file to get started</p>
           <p className="supported-formats">
-            Supported formats: .xliff, .xlf, .mxliff (Phrase), .mqxliff (MemoQ), .sdlxliff (Trados)
+            Supported formats: .xliff, .xlf, .mxliff (Phrase), .mqxliff (MemoQ), .sdlxliff (Trados), .tmx
           </p>
         </div>
       )}

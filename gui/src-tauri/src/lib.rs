@@ -118,7 +118,7 @@ fn get_changelog_content(app_handle: tauri::AppHandle) -> Result<String, String>
 }
 
 #[tauri::command]
-fn open_xliff(file_path: String, app_handle: tauri::AppHandle) -> Result<XliffData, String> {
+fn open_xliff(file_path: String, target_lang: Option<String>, app_handle: tauri::AppHandle) -> Result<XliffData, String> {
     // Determine CLI executable path based on environment
     let cli_path = if cfg!(dev) {
         // Development mode: use Python script directly
@@ -126,13 +126,13 @@ fn open_xliff(file_path: String, app_handle: tauri::AppHandle) -> Result<XliffDa
         let python = format!("{}venv/bin/python3", project_root);
         let script = format!("{}src/cli.py", project_root);
 
-        // Call Python CLI to parse XLIFF file
-        let output = Command::new(&python)
-            .arg(&script)
-            .arg("stats")
-            .arg(&file_path)
-            .arg("--json")
-            .output()
+        // Call Python CLI to parse XLIFF/TMX file
+        let mut cmd = Command::new(&python);
+        cmd.arg(&script).arg("stats").arg(&file_path).arg("--json");
+        if let Some(ref lang) = target_lang {
+            cmd.arg("--target-lang").arg(lang);
+        }
+        let output = cmd.output()
             .map_err(|e| format!("Failed to execute Python: {}", e))?;
 
         if !output.status.success() {
@@ -154,12 +154,13 @@ fn open_xliff(file_path: String, app_handle: tauri::AppHandle) -> Result<XliffDa
         resource_dir.join("bin/xliff_cli").to_string_lossy().to_string()
     };
 
-    // Call CLI executable to parse XLIFF file
-    let output = Command::new(&cli_path)
-        .arg("stats")
-        .arg(&file_path)
-        .arg("--json")
-        .output()
+    // Call CLI executable to parse XLIFF/TMX file
+    let mut cmd = Command::new(&cli_path);
+    cmd.arg("stats").arg(&file_path).arg("--json");
+    if let Some(ref lang) = target_lang {
+        cmd.arg("--target-lang").arg(lang);
+    }
+    let output = cmd.output()
         .map_err(|e| format!("Failed to execute CLI: {}", e))?;
 
     if !output.status.success() {
@@ -176,13 +177,55 @@ fn open_xliff(file_path: String, app_handle: tauri::AppHandle) -> Result<XliffDa
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+struct TmxLanguages {
+    srclang: String,
+    languages: Vec<String>,
+}
+
+#[tauri::command]
+fn get_tmx_languages(file_path: String, app_handle: tauri::AppHandle) -> Result<TmxLanguages, String> {
+    let output = if cfg!(dev) {
+        let project_root = "../../";
+        let python = format!("{}venv/bin/python3", project_root);
+        let script = format!("{}src/cli.py", project_root);
+        Command::new(&python)
+            .arg(&script)
+            .arg("tmx-languages")
+            .arg(&file_path)
+            .output()
+            .map_err(|e| format!("Failed to execute Python: {}", e))?
+    } else {
+        let resource_dir = app_handle.path()
+            .resource_dir()
+            .map_err(|e| format!("Failed to get resource directory: {}", e))?;
+        let cli_path = resource_dir.join("bin/xliff_cli").to_string_lossy().to_string();
+        Command::new(&cli_path)
+            .arg("tmx-languages")
+            .arg(&file_path)
+            .output()
+            .map_err(|e| format!("Failed to execute CLI: {}", e))?
+    };
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Python error: {}", stderr));
+    }
+
+    let json_str = String::from_utf8_lossy(&output.stdout);
+    let data: TmxLanguages = serde_json::from_str(&json_str)
+        .map_err(|e| format!("Failed to parse JSON: {} (output: {})", e, json_str))?;
+
+    Ok(data)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 struct EditedUnit {
     id: String,
     target: String,
 }
 
 #[tauri::command]
-fn save_xliff(file_path: String, edited_units: Vec<EditedUnit>, app_handle: tauri::AppHandle) -> Result<String, String> {
+fn save_xliff(file_path: String, edited_units: Vec<EditedUnit>, target_lang: Option<String>, app_handle: tauri::AppHandle) -> Result<String, String> {
     use std::fs;
 
     // Create temporary JSON file with edits
@@ -200,12 +243,12 @@ fn save_xliff(file_path: String, edited_units: Vec<EditedUnit>, app_handle: taur
         let python = format!("{}venv/bin/python3", project_root);
         let script = format!("{}src/cli.py", project_root);
 
-        Command::new(&python)
-            .arg(&script)
-            .arg("apply-edits")
-            .arg(&file_path)
-            .arg(&temp_json)
-            .output()
+        let mut cmd = Command::new(&python);
+        cmd.arg(&script).arg("apply-edits").arg(&file_path).arg(&temp_json);
+        if let Some(ref lang) = target_lang {
+            cmd.arg("--target-lang").arg(lang);
+        }
+        cmd.output()
             .map_err(|e| format!("Failed to execute Python: {}", e))?
     } else {
         // Production mode: use bundled executable
@@ -214,11 +257,12 @@ fn save_xliff(file_path: String, edited_units: Vec<EditedUnit>, app_handle: taur
             .map_err(|e| format!("Failed to get resource directory: {}", e))?;
         let cli_path = resource_dir.join("bin/xliff_cli").to_string_lossy().to_string();
 
-        Command::new(&cli_path)
-            .arg("apply-edits")
-            .arg(&file_path)
-            .arg(&temp_json)
-            .output()
+        let mut cmd = Command::new(&cli_path);
+        cmd.arg("apply-edits").arg(&file_path).arg(&temp_json);
+        if let Some(ref lang) = target_lang {
+            cmd.arg("--target-lang").arg(lang);
+        }
+        cmd.output()
             .map_err(|e| format!("Failed to execute CLI: {}", e))?
     };
 
@@ -1244,7 +1288,7 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet, open_xliff, save_xliff, load_regex_library, save_regex_library, batch_find, list_qa_profiles, batch_replace, save_qa_profile, delete_qa_profile, load_qa_profile, export_regex_library, import_regex_library, export_qa_profile, import_qa_profile, get_user_guide_content, get_changelog_content])
+        .invoke_handler(tauri::generate_handler![greet, open_xliff, save_xliff, get_tmx_languages, load_regex_library, save_regex_library, batch_find, list_qa_profiles, batch_replace, save_qa_profile, delete_qa_profile, load_qa_profile, export_regex_library, import_regex_library, export_qa_profile, import_qa_profile, get_user_guide_content, get_changelog_content])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -13,6 +13,7 @@ from typing import Optional
 sys.path.insert(0, str(Path(__file__).parent))
 
 from parsers.xliff_parser import XLIFFParser
+from parsers.tmx_parser import TMXParser
 from parsers.xbench_parser import XbenchParser
 from regex_engine.regex_processor import RegexProcessor
 from backup.backup_manager import BackupManager
@@ -20,6 +21,27 @@ from patterns.pattern_library import PatternLibrary, Pattern
 from validators.icu_validator import ICUValidator
 from qa.qa_profile import QAProfileManager, QAProfile
 import json
+
+
+def get_parser(file_path: str, target_lang: str = None):
+    """Return the appropriate parser based on file extension."""
+    if file_path.lower().endswith('.tmx'):
+        return TMXParser(file_path, target_lang=target_lang)
+    return XLIFFParser(file_path)
+
+
+def tmx_languages_command(args):
+    """Return available languages in a TMX file as JSON."""
+    parser = TMXParser(args.file)
+    if not parser.parse():
+        print(json.dumps({"error": "Failed to parse TMX file"}))
+        return 1
+    output = {
+        "srclang": parser.srclang,
+        "languages": parser.get_available_languages()
+    }
+    print(json.dumps(output))
+    return 0
 
 
 def find_command(args):
@@ -520,10 +542,11 @@ def replace_command(args):
 
 
 def stats_command(args):
-    """Show statistics about XLIFF file."""
+    """Show statistics about XLIFF/TMX file."""
     import json
 
-    parser = XLIFFParser(args.file)
+    target_lang = getattr(args, 'target_lang', None)
+    parser = get_parser(args.file, target_lang)
     if not parser.parse():
         if args.json:
             print(json.dumps({"error": "Failed to parse XLIFF file"}))
@@ -978,7 +1001,7 @@ def patterns_command(args):
 
 
 def apply_edits_command(args):
-    """Apply edits from JSON file to XLIFF."""
+    """Apply edits from JSON file to XLIFF or TMX."""
     import json
 
     # Read edits from JSON file
@@ -989,10 +1012,11 @@ def apply_edits_command(args):
         print(f"Failed to read edits JSON: {e}")
         return 1
 
-    # Parse XLIFF
-    parser = XLIFFParser(args.file)
+    # Parse file (XLIFF or TMX)
+    target_lang = getattr(args, 'target_lang', None)
+    parser = get_parser(args.file, target_lang)
     if not parser.parse():
-        print("Failed to parse XLIFF file")
+        print("Failed to parse file")
         return 1
 
     # Create backup
@@ -1075,10 +1099,16 @@ def main():
     replace_parser.set_defaults(func=replace_command)
 
     # Stats command
-    stats_parser = subparsers.add_parser('stats', help='Show XLIFF file statistics')
-    stats_parser.add_argument('file', help='XLIFF file path')
+    stats_parser = subparsers.add_parser('stats', help='Show XLIFF/TMX file statistics')
+    stats_parser.add_argument('file', help='XLIFF or TMX file path')
     stats_parser.add_argument('--json', action='store_true', help='Output as JSON')
+    stats_parser.add_argument('--target-lang', help='Target language code (for TMX files with multiple languages)')
     stats_parser.set_defaults(func=stats_command)
+
+    # TMX languages command
+    tmx_languages_parser = subparsers.add_parser('tmx-languages', help='List available languages in a TMX file')
+    tmx_languages_parser.add_argument('file', help='TMX file path')
+    tmx_languages_parser.set_defaults(func=tmx_languages_command)
 
     # Xbench command
     xbench_parser = subparsers.add_parser('xbench', help='Parse Xbench checklist file')
@@ -1088,8 +1118,9 @@ def main():
 
     # Apply-edits command (for GUI integration)
     apply_edits_parser = subparsers.add_parser('apply-edits', help='Apply edits from JSON file')
-    apply_edits_parser.add_argument('file', help='XLIFF file path')
+    apply_edits_parser.add_argument('file', help='XLIFF or TMX file path')
     apply_edits_parser.add_argument('edits_json', help='JSON file with edits')
+    apply_edits_parser.add_argument('--target-lang', help='Target language code (for TMX files with multiple languages)')
     apply_edits_parser.set_defaults(func=apply_edits_command)
 
     # Backup command
