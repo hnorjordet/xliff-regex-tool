@@ -5,6 +5,13 @@ All notable changes to XLIFF Regex Tool will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-03-04
+
+### Added
+- TMX file format support — open, edit, and save TMX translation memories using the same workflow as XLIFF
+- Language picker dialog for TMX files with multiple target languages
+- Import batch checks from XML file directly in the Batch Check profile editor
+
 ## [0.4.5] - 2026-02-17
 
 ### Added

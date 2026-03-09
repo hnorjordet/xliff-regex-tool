@@ -286,6 +286,17 @@ a:focus-visible {
   margin-right: 0.5rem;
 }
 
+.tmx-badge {
+  margin-left: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  background-color: #0066cc;
+  color: white;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  font-family: monospace;
+}
+
 .content {
   flex: 1;
   overflow: auto;
@@ -2437,6 +2448,26 @@ a:focus-visible {
 }
 
 .add-check-btn:hover {
+  opacity: 0.9;
+}
+
+.checks-header-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.import-checks-btn {
+  padding: 0.5rem 1rem;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.import-checks-btn:hover {
   opacity: 0.9;
 }
 
