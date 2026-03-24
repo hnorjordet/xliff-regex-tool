@@ -706,11 +706,9 @@ def stats_command(args):
         display_units = filtered_units if filtered_units else trans_units
 
         # Add sequential segment numbers (1, 2, 3...) for display
-        # Keep original ID for internal use
+        # Keep original ID intact so save/apply-edits can match correctly
         for idx, unit in enumerate(display_units, start=1):
             unit['segment_number'] = idx
-            unit['original_id'] = unit['id']  # Keep UUID for reference
-            unit['id'] = str(idx)  # Replace with simple number
 
         # Recalculate stats based on filtered display_units
         filtered_stats = {

@@ -30,6 +30,7 @@ struct TmsMetadata {
 #[derive(Debug, Serialize, Deserialize)]
 struct TransUnit {
     id: String,
+    segment_number: Option<i32>,
     source: String,
     target: String,
     metadata: Option<Metadata>,
@@ -122,7 +123,7 @@ fn open_xliff(file_path: String, target_lang: Option<String>, app_handle: tauri:
     // Determine CLI executable path based on environment
     let cli_path = if cfg!(dev) {
         // Development mode: use Python script directly
-        let project_root = "../../";
+        let project_root = concat!(env!("CARGO_MANIFEST_DIR"), "/../../");
         let python = format!("{}venv/bin/python3", project_root);
         let script = format!("{}src/cli.py", project_root);
 
@@ -185,7 +186,7 @@ struct TmxLanguages {
 #[tauri::command]
 fn get_tmx_languages(file_path: String, app_handle: tauri::AppHandle) -> Result<TmxLanguages, String> {
     let output = if cfg!(dev) {
-        let project_root = "../../";
+        let project_root = concat!(env!("CARGO_MANIFEST_DIR"), "/../../");
         let python = format!("{}venv/bin/python3", project_root);
         let script = format!("{}src/cli.py", project_root);
         Command::new(&python)
@@ -239,7 +240,7 @@ fn save_xliff(file_path: String, edited_units: Vec<EditedUnit>, target_lang: Opt
     // Determine CLI executable path based on environment
     let output = if cfg!(dev) {
         // Development mode: use Python script directly
-        let project_root = "../../";
+        let project_root = concat!(env!("CARGO_MANIFEST_DIR"), "/../../");
         let python = format!("{}venv/bin/python3", project_root);
         let script = format!("{}src/cli.py", project_root);
 
@@ -500,7 +501,7 @@ fn batch_find(file_path: String, profile_path: String, app_handle: tauri::AppHan
     // Determine CLI executable path based on environment
     let output = if cfg!(dev) {
         // Development mode: use Python script directly
-        let project_root = "../../";
+        let project_root = concat!(env!("CARGO_MANIFEST_DIR"), "/../../");
         let python = format!("{}venv/bin/python3", project_root);
         let script = format!("{}src/cli.py", project_root);
 
@@ -622,7 +623,7 @@ fn batch_replace(file_path: String, profile_path: String, app_handle: tauri::App
     // Determine CLI executable path based on environment
     let output = if cfg!(dev) {
         // Development mode: use Python script directly
-        let project_root = "../../";
+        let project_root = concat!(env!("CARGO_MANIFEST_DIR"), "/../../");
         let python = format!("{}venv/bin/python3", project_root);
         let script = format!("{}src/cli.py", project_root);
 
@@ -1091,6 +1092,24 @@ fn import_qa_profile(import_path: String) -> Result<String, String> {
     Ok(format!("Profile imported successfully as {}", file_name))
 }
 
+/// Check for a pending file path written by SpellcheckQA's "Open in RegEx Tool" action.
+/// Reads ~/.spellcheck-qa/pending_file.txt, returns its contents, then deletes the file.
+/// Returns None if no pending file exists.
+#[tauri::command]
+fn check_pending_file() -> Option<String> {
+    let home = std::env::var("HOME").ok()?;
+    let ipc_path = std::path::PathBuf::from(home)
+        .join(".spellcheck-qa")
+        .join("pending_file.txt");
+    if !ipc_path.exists() {
+        return None;
+    }
+    let content = std::fs::read_to_string(&ipc_path).ok()?;
+    let _ = std::fs::remove_file(&ipc_path);
+    let trimmed = content.trim().to_string();
+    if trimmed.is_empty() { None } else { Some(trimmed) }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -1288,7 +1307,7 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet, open_xliff, save_xliff, get_tmx_languages, load_regex_library, save_regex_library, batch_find, list_qa_profiles, batch_replace, save_qa_profile, delete_qa_profile, load_qa_profile, export_regex_library, import_regex_library, export_qa_profile, import_qa_profile, get_user_guide_content, get_changelog_content])
+        .invoke_handler(tauri::generate_handler![greet, open_xliff, save_xliff, get_tmx_languages, load_regex_library, save_regex_library, batch_find, list_qa_profiles, batch_replace, save_qa_profile, delete_qa_profile, load_qa_profile, export_regex_library, import_regex_library, export_qa_profile, import_qa_profile, get_user_guide_content, get_changelog_content, check_pending_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

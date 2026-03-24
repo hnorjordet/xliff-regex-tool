@@ -33,6 +33,7 @@ interface TmsMetadata {
 
 interface TransUnit {
   id: string;
+  segment_number?: number | null;
   source: string;
   target: string;
   metadata?: Metadata | null;
@@ -741,6 +742,35 @@ function App() {
     }
   }
 
+  // Open a specific file path directly (used by SpellcheckQA IPC handoff)
+  async function openFileByPath(path: string) {
+    try {
+      setTmxTargetLang(null);
+      setFilePath(path);
+      setError("");
+      setEditedUnits(new Map());
+      setSelectedSegmentId(null);
+      setEditorValue("");
+      const data = await invoke<XliffData>("open_xliff", { filePath: path, targetLang: null });
+      setXliffData(data);
+    } catch (err) {
+      setError(`Error opening file: ${err}`);
+      console.error(err);
+    }
+  }
+
+  // Check for a pending file written by SpellcheckQA
+  async function checkPendingFile() {
+    try {
+      const pendingPath = await invoke<string | null>("check_pending_file");
+      if (pendingPath) {
+        await openFileByPath(pendingPath);
+      }
+    } catch {
+      // Silently ignore — pending file is optional
+    }
+  }
+
   function handleCellEdit(unitId: string, newValue: string) {
     const newEdits = new Map(editedUnits);
     newEdits.set(unitId, newValue);
@@ -1063,6 +1093,17 @@ function App() {
       }
     }
     loadLibrary();
+  }, []);
+
+  // Check for pending file from SpellcheckQA on startup and window focus
+  useEffect(() => {
+    // Check immediately on mount (app already running when file was requested)
+    checkPendingFile();
+
+    // Also check when window regains focus (app was already open)
+    const handleFocus = () => { checkPendingFile(); };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, []);
 
   // Load TMS settings from localStorage
@@ -2101,12 +2142,20 @@ function App() {
         targetLang: tmxTargetLang
       });
 
+      // Update xliffData in memory with edited values (avoids reload overwriting edits)
+      const savedEdits = new Map(editedUnits);
+      setXliffData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          trans_units: prev.trans_units.map(u =>
+            savedEdits.has(u.id) ? { ...u, target: savedEdits.get(u.id)! } : u
+          )
+        };
+      });
+
       // Clear edits after successful save
       setEditedUnits(new Map());
-
-      // Reload file to show saved state
-      const data = await invoke<XliffData>("open_xliff", { filePath: filePath, targetLang: tmxTargetLang });
-      setXliffData(data);
 
       alert("File saved successfully!");
     } catch (err) {
@@ -2536,7 +2585,7 @@ function App() {
                 <h1>XLIFF Regex Tool</h1>
               </div>
               <div className="about-info">
-                <p className="version">Version 0.5.0</p>
+                <p className="version">Version 0.5.1</p>
                 <p className="description">
                   A powerful Find & Replace tool for XLIFF translation files with regex support,
                   batch check profiles, and batch processing capabilities.
@@ -3750,20 +3799,17 @@ function App() {
                   }
                   const hasICUError = icuErrors && icuErrors.length > 0;
 
-                  // Extract number after colon for MXLIFF files (format: "abc:0")
-                  // For MXLIFF, add 1 to convert from 0-indexed to 1-indexed
-                  // For SDLXLIFF/standard XLIFF, backend already sends 1-indexed numbers
+                  // Use segment_number for display if available, otherwise fall back to id
                   let displayId: string;
-                  if (unit.id.includes(':')) {
+                  if (unit.segment_number != null) {
+                    displayId = String(unit.segment_number);
+                  } else if (unit.id.includes(':')) {
                     // MXLIFF format: extract number after colon and add 1
                     const numAfterColon = unit.id.split(':').pop();
-                    if (numAfterColon && /^\d+$/.test(numAfterColon)) {
-                      displayId = String(parseInt(numAfterColon, 10) + 1);
-                    } else {
-                      displayId = unit.id;
-                    }
+                    displayId = numAfterColon && /^\d+$/.test(numAfterColon)
+                      ? String(parseInt(numAfterColon, 10) + 1)
+                      : unit.id;
                   } else {
-                    // SDLXLIFF or standard: use ID as-is (already 1-indexed)
                     displayId = unit.id;
                   }
 
@@ -3822,20 +3868,17 @@ function App() {
             // Use editorValue state instead of directly reading from editedUnits
             // This ensures the textarea updates when applyICUFix is called
             const currentValue = editorValue;
-            // Extract number after colon for MXLIFF files (format: "abc:0")
-            // For MXLIFF, add 1 to convert from 0-indexed to 1-indexed
-            // For SDLXLIFF/standard XLIFF, backend already sends 1-indexed numbers
+            // Use segment_number for display if available, otherwise fall back to id
             let displayId: string;
-            if (selectedUnit.id.includes(':')) {
+            if (selectedUnit.segment_number != null) {
+              displayId = String(selectedUnit.segment_number);
+            } else if (selectedUnit.id.includes(':')) {
               // MXLIFF format: extract number after colon and add 1
               const numAfterColon = selectedUnit.id.split(':').pop();
-              if (numAfterColon && /^\d+$/.test(numAfterColon)) {
-                displayId = String(parseInt(numAfterColon, 10) + 1);
-              } else {
-                displayId = selectedUnit.id;
-              }
+              displayId = numAfterColon && /^\d+$/.test(numAfterColon)
+                ? String(parseInt(numAfterColon, 10) + 1)
+                : selectedUnit.id;
             } else {
-              // SDLXLIFF or standard: use ID as-is (already 1-indexed)
               displayId = selectedUnit.id;
             }
 
